@@ -1,0 +1,13 @@
+
+-------> x (width)
+|
+|
+|
+V
+y (height)
+
+Snake:
+
+
+pixels[0] - head
+pixels[-1] - tail
