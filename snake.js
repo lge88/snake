@@ -20,6 +20,16 @@ class Canvas2DRenderer {
     this._ctx.restore();
   }
 
+  drawBanner({ text }) {
+    this._ctx.save();
+    const { width, height } = this._ctx.canvas;
+    const cx = 0.5 * width, cy = 0.5 * height;
+    this._ctx.font = '48px serif';
+    this._ctx.textAlign = 'center';
+    this._ctx.fillText(text, cx, cy);
+    this._ctx.restore();
+  }
+
   drawPixel({ x, y, color }) {
     const { _dx: dx, _dy: dy, _pixelWidth: w, _pixelHeight: h } = this;
     const p = { x: x * dx, y: y * dy };
@@ -139,6 +149,10 @@ class Game {
 
     this.movingDirection = snakeMovingDirection;
     this.frameCount = 0;
+    this.gameState = {
+      error: null,
+      score: 0
+    };
 
     document.addEventListener('keydown', this.onKeyDown);
     this.animationId = requestAnimationFrame(this.animate);
@@ -151,6 +165,7 @@ class Game {
 
   animate(ts) {
     const { frameCount, frameInterval } = this;
+
     const curFrameCount = Math.floor(ts / frameInterval);
     if (frameCount < 0) return;
 
@@ -159,6 +174,9 @@ class Game {
       this.render();
       this.frameCount = curFrameCount;
     }
+
+    const { error } = this.gameState;
+    if (error !== null) return;
     this.animationId = requestAnimationFrame(this.animate);
   }
 
@@ -197,18 +215,25 @@ class Game {
     snake.setDirection(movingDirection);
 
     const newHead = snake.nextHead();
-
-    if (snake.wouldHitSelf(newHead)) console.log("Game over");
-
-    if (newHead.x < 0 || newHead.x >= nx) console.log("Game over");
-
-    if (newHead.y < 0 || newHead.y >= ny) console.log("Game over");
+    if (snake.wouldHitSelf(newHead) ||
+        (newHead.x < 0 || newHead.x >= nx) ||
+        (newHead.y < 0 || newHead.y >= ny)) {
+      this.gameState.error = 'Game Over!';
+      return;
+    }
 
     snake.move(newHead);
   }
 
   render() {
     const { renderer, snake } = this;
+    const { gameState } = this;
+    const { error } = gameState;
+    if (error !== null) {
+      renderer.drawBanner({ text: error });
+      return;
+    }
+
     renderer.clear();
     snake.draw(renderer);
   }
