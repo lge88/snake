@@ -66,6 +66,10 @@ class Snake {
     this._movingDirection = movingDirection;
   }
 
+  pixels() {
+    return this._pixels;
+  }
+
   head() {
     const p = this._pixels[0];
     return { x: p.x, y: p.y };
@@ -96,6 +100,11 @@ class Snake {
     this._pixels.pop();
   }
 
+  eat(food) {
+    const { x, y } = food;
+    this._pixels.unshift({ x, y });
+  }
+
   wouldHitSelf(newHeadPosition) {
     const { x, y } = newHeadPosition;
     const pixels = this._pixels;
@@ -113,6 +122,28 @@ class Snake {
   }
 }
 
+class Food {
+  constructor({ x, y, color }) {
+    this.x = x;
+    this.y = y;
+    this.color = color;
+  }
+
+  draw(renderer) {
+    const { x, y, color } = this;
+    renderer.drawPixel({ x, y, color });
+  }
+}
+
+// Generate a random int in [0, n-1] inclusive
+function randomInt(n) {
+  return Math.floor(n * Math.random());
+}
+
+function randomPick(arr) {
+  return arr[randomInt(arr.length)];
+}
+
 class Game {
   // configs:
   // cavasId
@@ -122,6 +153,7 @@ class Game {
   // snakeColor
   // snakeMovingDirection
   // snakePixels
+  // foodColor
   // frameInterval
   constructor(config) {
     Object.assign(this, config);
@@ -131,6 +163,8 @@ class Game {
     this.onKeyDown = this.onKeyDown.bind(this);
     this.update = this.update.bind(this);
     this.render = this.render.bind(this);
+    this.pixelToIndex = this.pixelToIndex.bind(this);
+    this.indexToPixel = this.indexToPixel.bind(this);
   }
 
   start() {
@@ -138,6 +172,7 @@ class Game {
 
     const { canvasId, nx, ny, spacingRatio } = this;
     const { snakeColor, snakeMovingDirection, snakePixels } = this;
+    const { foodColor } = this;
 
     this.renderer = new Canvas2DRenderer({ canvasId, nx, ny, spacingRatio });
 
@@ -146,6 +181,8 @@ class Game {
       movingDirection: snakeMovingDirection,
       pixels: snakePixels
     });
+
+    this.food = this.generateFood();
 
     this.movingDirection = snakeMovingDirection;
     this.frameCount = 0;
@@ -210,23 +247,62 @@ class Game {
 
   update() {
     const { nx, ny } = this;
-    const { snake, movingDirection } = this;
+    const { snake, food, movingDirection } = this;
 
     snake.setDirection(movingDirection);
 
     const newHead = snake.nextHead();
+
     if (snake.wouldHitSelf(newHead) ||
         (newHead.x < 0 || newHead.x >= nx) ||
         (newHead.y < 0 || newHead.y >= ny)) {
       this.gameState.error = 'Game Over!';
       return;
+    } else if (food.x == newHead.x && food.y == newHead.y) {
+      snake.eat(food);
+      this.food = this.generateFood();
     }
 
     snake.move(newHead);
   }
 
+  pixelToIndex({ x, y }) {
+    return y + this.nx + x;
+  }
+
+  indexToPixel(i) {
+    const nx = this.nx;
+    return { x: i % nx, y: Math.floor(i / nx) };
+  }
+
+  generateFood() {
+    const { nx, ny, snake, foodColor } = this;
+
+    const snakeBodyMap = snake.pixels()
+            .map(this.pixelToIndex)
+            .reduce((sofar, index) => {
+              sofar[index] = true;
+              return sofar;
+            }, {});
+
+    let availablePositions = [];
+    for (let x = 0; x < nx; ++x) {
+      for (let y = 0; y < ny; ++y) {
+        const p = { x, y };
+        const index = this.pixelToIndex(p);
+        if (snakeBodyMap[index] !== true) {
+          availablePositions.push(p);
+        }
+      }
+    }
+
+    const picked = randomPick(availablePositions);
+
+    return new Food({ x: picked.x, y: picked.y, color: foodColor });
+  }
+
   render() {
-    const { renderer, snake } = this;
+    const { renderer, snake, food } = this;
     const { gameState } = this;
     const { error } = gameState;
     if (error !== null) {
@@ -236,6 +312,7 @@ class Game {
 
     renderer.clear();
     snake.draw(renderer);
+    food.draw(renderer);
   }
 }
 
@@ -245,18 +322,19 @@ game.nx = 20;
 game.ny = 20;
 game.spacingRatio = 0.1;
 game.snakeColor = 'blue';
+game.foodColor = 'red';
 game.snakeMovingDirection = 'down';
 game.snakePixels = [
   { x: 5, y: 3 },
-  { x: 4, y: 3 },
-  { x: 3, y: 3 },
-  { x: 2, y: 3 },
-  { x: 1, y: 3 },
-  { x: 0, y: 3 },
-  { x: 0, y: 2 },
-  { x: 0, y: 1 },
-  { x: 0, y: 0 },
+  // { x: 4, y: 3 },
+  // { x: 3, y: 3 },
+  // { x: 2, y: 3 },
+  // { x: 1, y: 3 },
+  // { x: 0, y: 3 },
+  // { x: 0, y: 2 },
+  // { x: 0, y: 1 },
+  // { x: 0, y: 0 },
 ];
-game.frameInterval = 100;
+game.frameInterval = 200;
 
 game.start();
