@@ -318,22 +318,14 @@ class Game {
 
 var game = new Game;
 game.canvasId = 'canvas';
-game.nx = 20;
+game.nx = 10;
 game.ny = 20;
 game.spacingRatio = 0.1;
 game.snakeColor = 'blue';
 game.foodColor = 'red';
 game.snakeMovingDirection = 'down';
 game.snakePixels = [
-  { x: 5, y: 3 },
-  // { x: 4, y: 3 },
-  // { x: 3, y: 3 },
-  // { x: 2, y: 3 },
-  // { x: 1, y: 3 },
-  // { x: 0, y: 3 },
-  // { x: 0, y: 2 },
-  // { x: 0, y: 1 },
-  // { x: 0, y: 0 },
+  { x: 1 + randomInt(8), y: 2 + randomInt(16) },
 ];
 game.frameInterval = 200;
 
